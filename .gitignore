@@ -5,6 +5,10 @@ Intermediate/
 Saved/
 Build/
 
+# RiderLink plugin: each developer installs it locally from Rider
+Plugins/Developer/RiderLink/
+Plugins/RiderLink/
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/
