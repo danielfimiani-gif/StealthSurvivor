@@ -49,6 +49,29 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* SprintAction;
+	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* CrouchAction;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
+	float WalkSpeed = 350.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
+	float RunSpeed = 650.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
+	float CrouchSpeed = 200.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Noise", meta=(ClampMin="0"))
+	float WalkNoiseRange = 600.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Noise", meta=(ClampMin="0"))
+	float RunNoiseRange = 1500.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Noise", meta=(ClampMin="0"))
+	float CrouchNoiseRange = 200.f;
 public:
 
 	/** Constructor */
@@ -66,7 +89,10 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-
+	
+	void StartSprint();
+	void StopSprint();
+	void ToggleCrouch();
 public:
 
 	/** Handles move inputs from either controls or UI interfaces */
@@ -86,11 +112,19 @@ public:
 	virtual void DoJumpEnd();
 
 public:
-
+	UFUNCTION(BlueprintPure, Category="Stealth")
+	bool IsSprinting() const { return bIsSprinting; }
+	
+	UFUNCTION(BlueprintPure, Category="Stealth|Noise")
+	float GetCurrentNoiseRange() const;
+	
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+private:
+	void UpdateMovementSpeed();
+	bool bIsSprinting = false;
 };
 
