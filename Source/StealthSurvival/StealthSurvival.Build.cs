@@ -16,6 +16,7 @@ public class StealthSurvival : ModuleRules
 			"EnhancedInput",
 			"AIModule",
 			"StateTreeModule",
+			"NavigationSystem",
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate"
