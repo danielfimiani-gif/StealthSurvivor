@@ -11,6 +11,7 @@
 #include "InputActionValue.h"
 #include "StealthSurvival.h"
 #include "Perception/AISense_Hearing.h"
+#include  "StealthGuardCharacter.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 {
@@ -76,6 +77,9 @@ void AStealthSurvivalCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		
 		// Crouch
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AStealthSurvivalCharacter::ToggleCrouch);
+		
+		// Takedown
+		EnhancedInputComponent->BindAction(TakeDownAction, ETriggerEvent::Started,this, &AStealthSurvivalCharacter::ExecuteTakeDown);
 	}
 	else
 	{
@@ -220,4 +224,49 @@ void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
 		this,
 		NoiseRange
 	);
+}
+
+void AStealthSurvivalCharacter::ExecuteTakeDown()
+{
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+	
+	const FVector TraceStart = GetActorLocation();
+	const FVector TraceEnd = TraceStart + GetActorForwardVector() * TakeDownTraceDistance;
+	
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	
+	const bool bHit = World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+	if (!bHit)
+	{
+		return;
+	}
+	
+	AStealthGuardCharacter* Guard = Cast<AStealthGuardCharacter>(Hit.GetActor());
+	if (Guard == nullptr)
+	{
+		return;
+	}
+	
+	FVector GuardToPlayer = GetActorLocation() - Guard->GetActorLocation();
+	GuardToPlayer.Z = 0.f;
+	GuardToPlayer.Normalize();
+	
+	FVector GuardForward = Guard->GetActorForwardVector();
+	GuardForward.Z = 0.f;
+	GuardForward.Normalize();
+	
+	const float DotProduct = FVector::DotProduct(GuardForward, GuardToPlayer);
+	
+	if (DotProduct > TakeDownRearDotThreshold)
+	{
+		return;
+	}
+	
+	Guard->Die();
 }

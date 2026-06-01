@@ -36,7 +36,7 @@ class AStealthSurvivalCharacter : public ACharacter
 	UAIPerceptionStimuliSourceComponent* PerceptionStimuliSource;
 protected:
 
-	/** Jump Input Action */
+	/** Jump to Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
 
@@ -58,6 +58,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* CrouchAction;
 	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* TakeDownAction;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
 	float WalkSpeed = 350.f;
 	
@@ -75,6 +78,12 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Noise", meta=(ClampMin="0"))
 	float CrouchNoiseRange = 200.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Combat", meta=(ClampMin="0"))
+	float TakeDownTraceDistance = 200.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Combat", meta=(ClampMin="0"))
+	float TakeDownRearDotThreshold = -0.3f;
 public:
 
 	/** Constructor */
@@ -86,7 +95,8 @@ protected:
 
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	
+	void ExecuteTakeDown();
 protected:
 
 	/** Called for movement input */
