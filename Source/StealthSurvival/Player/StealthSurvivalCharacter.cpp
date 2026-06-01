@@ -10,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "StealthSurvival.h"
+#include "Perception/AISense_Hearing.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 {
@@ -192,4 +193,31 @@ float AStealthSurvivalCharacter::GetCurrentNoiseRange() const
 	if (bIsCrouched) return CrouchNoiseRange;
 	if (bIsSprinting) return RunNoiseRange;
 	return WalkNoiseRange;
+}
+
+void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	NoiseEmissionTimer += DeltaSeconds;
+	if (NoiseEmissionTimer < NoiseEmissionInterval)
+	{
+		return;
+	}
+	NoiseEmissionTimer = 0.f;
+	
+	const float CurrentSpeed = GetVelocity().Size2D();
+	if (CurrentSpeed < 5.f)
+	{
+		return;
+	}
+	
+	const float NoiseRange = GetCurrentNoiseRange();
+	UAISense_Hearing::ReportNoiseEvent(
+		GetWorld(),
+		GetActorLocation(),
+		1.0f,
+		this,
+		NoiseRange
+	);
 }

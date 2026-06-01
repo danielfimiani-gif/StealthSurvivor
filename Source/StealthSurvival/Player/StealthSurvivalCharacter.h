@@ -10,6 +10,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
+class UAIPerceptionStimuliSourceComponent;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -31,6 +32,8 @@ class AStealthSurvivalCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	UAIPerceptionStimuliSourceComponent* PerceptionStimuliSource;
 protected:
 
 	/** Jump Input Action */
@@ -76,6 +79,8 @@ public:
 
 	/** Constructor */
 	AStealthSurvivalCharacter();	
+	
+	virtual void Tick(float DeltaSeconds) override;
 
 protected:
 
@@ -126,5 +131,10 @@ public:
 private:
 	void UpdateMovementSpeed();
 	bool bIsSprinting = false;
+	
+	float NoiseEmissionTimer = 0.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Stealth|Noise", meta=(ClampMin="0.5"))
+	float NoiseEmissionInterval = 0.2f;
 };
 
