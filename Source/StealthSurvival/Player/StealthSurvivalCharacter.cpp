@@ -12,6 +12,7 @@
 #include "StealthSurvival.h"
 #include "Perception/AISense_Hearing.h"
 #include  "StealthGuardCharacter.h"
+#include "Items/StealthThrowable.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 {
@@ -80,6 +81,9 @@ void AStealthSurvivalCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		
 		// Takedown
 		EnhancedInputComponent->BindAction(TakeDownAction, ETriggerEvent::Started,this, &AStealthSurvivalCharacter::ExecuteTakeDown);
+		
+		// Throw
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started,this, &AStealthSurvivalCharacter::ExecuteThrow);
 	}
 	else
 	{
@@ -269,4 +273,36 @@ void AStealthSurvivalCharacter::ExecuteTakeDown()
 	}
 	
 	Guard->Die();
+}
+
+void AStealthSurvivalCharacter::ExecuteThrow()
+{
+	if (ThrowableClass == nullptr)
+	{
+		return;
+	}
+	
+	UWorld* World = GetWorld();
+	if (World == nullptr)
+	{
+		return;
+	}
+	
+	const FRotator ControlRot = GetControlRotation();
+	const FRotator YawOnly(0.f, ControlRot.Yaw, 0.f);
+	const FVector SpawnLocation = GetActorLocation() + YawOnly.RotateVector(ThrowSpawnOffset);
+	
+	const FRotator LaunchRot(ControlRot.Pitch + ThrowPitchOffset, ControlRot.Yaw, 0.f);
+	const FVector LaunchVelocity = LaunchRot.Vector() * ThrowSpeed;
+	
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParams.Owner = this;
+	SpawnParams.Instigator = this;
+	
+	AStealthThrowable* Throwable = World->SpawnActor<AStealthThrowable>(ThrowableClass, SpawnLocation, LaunchRot, SpawnParams);
+	if (Throwable != nullptr)
+	{
+		Throwable->Launch(LaunchVelocity);
+	}
 }

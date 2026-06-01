@@ -5,7 +5,6 @@
 #include "StealthThrowable.generated.h"
 
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
 
 UCLASS(Abstract)
 class AStealthThrowable : public AActor
@@ -14,13 +13,11 @@ class AStealthThrowable : public AActor
 
 public:
 	AStealthThrowable();
+	void Launch(const FVector& InitialVelocity);
 	
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UStaticMeshComponent* MeshComponent;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Stealth|Noise", meta = (ClampMin="0"))
 	float NoiseLoudness = 1.f;

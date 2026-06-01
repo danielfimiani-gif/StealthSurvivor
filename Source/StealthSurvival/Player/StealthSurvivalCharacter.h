@@ -11,6 +11,7 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputAction;
 class UAIPerceptionStimuliSourceComponent;
+class AStealthThrowable;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -61,6 +62,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* TakeDownAction;
 	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* ThrowAction;
+	
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
 	float WalkSpeed = 350.f;
 	
@@ -84,6 +89,18 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Combat", meta=(ClampMin="0"))
 	float TakeDownRearDotThreshold = -0.3f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Throw")
+	TSubclassOf<AStealthThrowable> ThrowableClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Throw", meta=(ClampMin="0"))
+	float ThrowSpeed = 1500.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Throw", meta=(ClampMin="-89", ClampMax="89"))
+	float ThrowPitchOffset = 20.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Throw")
+	FVector ThrowSpawnOffset = FVector(80.f,0.f, 50.f);
 public:
 
 	/** Constructor */
@@ -97,6 +114,8 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	void ExecuteTakeDown();
+	
+	void ExecuteThrow();
 protected:
 
 	/** Called for movement input */
