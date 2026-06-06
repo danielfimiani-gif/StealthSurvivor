@@ -11,7 +11,7 @@
 #include "InputActionValue.h"
 #include "StealthSurvival.h"
 #include "Perception/AISense_Hearing.h"
-#include  "StealthGuardCharacter.h"
+#include "Guard/StealthGuardCharacter.h"
 #include "Items/StealthThrowable.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()

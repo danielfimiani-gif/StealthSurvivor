@@ -64,13 +64,19 @@ void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	static const FName HasLineOfSightKey = TEXT("HasLineOfSight");
 	
 	AActor* CurrentTarget = Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey));
+	
+	const bool bIsSight = (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>()); 
+	
+	if (!bIsSight && Stimulus.WasSuccessfullySensed() && CurrentTarget != nullptr)
+	{
+		return;
+	}
+	
 	if (CurrentTarget == Actor)
 	{
 		Blackboard->ClearValue(TargetActorKey);
 		Blackboard->SetValueAsBool(HasLineOfSightKey, false);
 	}
-	
-	const bool bIsSight = (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>());
 	
 	if (Stimulus.WasSuccessfullySensed())
 	{
