@@ -12,6 +12,8 @@ public class StealthSurvival : ModuleRules
 			"Core",
 			"CoreUObject",
 			"Engine",
+			"SmartObjectsModule",
+			"GameplayTags",
 			"InputCore",
 			"EnhancedInput",
 			"AIModule",

@@ -1,5 +1,6 @@
 ﻿#include "StealthSecurityCamera.h"
 
+#include "StealthAlertSubsystem.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SpotLightComponent.h"
@@ -87,15 +88,24 @@ void AStealthSecurityCamera::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 	
 	if (Stimulus.WasSuccessfullySensed())
 	{
+		const bool bWasUnaware = (TargetActor == nullptr);
 		TargetActor = Actor;
 		LastSeenLocation = Stimulus.StimulusLocation;
+		
+		if (bWasUnaware)
+		{
+			if (UWorld* World = GetWorld())
+			{
+				if (UStealthAlertSubsystem* Alert = World->GetSubsystem<UStealthAlertSubsystem>())
+				{
+					Alert->RaiseAlert(LastSeenLocation, TargetActor);
+				}
+			}
+		}
 	}
 	else
 	{
 		LastSeenLocation = Stimulus.StimulusLocation;
-		if (Stimulus.IsExpired())
-		{
-			TargetActor = nullptr;
-		}
+		TargetActor = nullptr;
 	}
 }

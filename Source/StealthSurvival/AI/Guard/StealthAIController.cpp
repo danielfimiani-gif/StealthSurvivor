@@ -1,4 +1,6 @@
 ﻿#include "StealthAIController.h"
+
+#include "StealthAlertSubsystem.h"
 #include "StealthGuardCharacter.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
@@ -49,7 +51,26 @@ void AStealthAIController::OnPossess(APawn* InPawn)
 		UseBlackboard(BT->GetBlackboardAsset(), BBComp);
 	}
 	
+	if (UWorld* World = GetWorld())
+	{
+		if (UStealthAlertSubsystem* Alert = World->GetSubsystem<UStealthAlertSubsystem>())
+		{
+			Alert->OnAlertRaised.AddDynamic(this, &AStealthAIController::OnAlertReceived);
+		}
+	}
+	
 	RunBehaviorTree(BT);
+}
+
+void AStealthAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (UStealthAlertSubsystem* Alert = World->GetSubsystem<UStealthAlertSubsystem>())
+		{
+			Alert->OnAlertRaised.RemoveDynamic(this, &AStealthAIController::OnAlertReceived);
+		}
+	}
 }
 
 void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -100,4 +121,22 @@ void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 			Blackboard->ClearValue((TargetActorKey));
 		}
 	}
+}
+
+void AStealthAIController::OnAlertReceived(FVector AlertLocation, AActor* AlertInstigator)
+{
+	if (Blackboard == nullptr)
+	{
+		return;
+	}
+	
+	static const FName TargetActorKey = TEXT("TargetActor");
+	static const FName InvestigateLocationKey = TEXT("InvestigateLocation");
+	
+	if (Blackboard->GetValueAsObject(TargetActorKey) != nullptr)
+	{
+		return;
+	}
+	
+	Blackboard->SetValueAsVector(InvestigateLocationKey, AlertLocation);
 }
