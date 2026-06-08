@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "SmartObjectRuntime.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "StealthAIController.generated.h"
 
@@ -13,7 +14,12 @@ class AStealthAIController : public AAIController
 {
 	GENERATED_BODY()
 public:
-	AStealthAIController();
+	AStealthAIController(const FObjectInitializer& ObjectInitializer);
+	void SetClaimedGuardPost(const FSmartObjectClaimHandle& Handle) {ClaimedGuardPost = Handle;}
+	void ReleaseGuardPost();
+	
+private:
+	FSmartObjectClaimHandle ClaimedGuardPost;
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category="Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;

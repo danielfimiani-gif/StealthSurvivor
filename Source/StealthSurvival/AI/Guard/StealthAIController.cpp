@@ -2,13 +2,17 @@
 
 #include "StealthAlertSubsystem.h"
 #include "StealthGuardCharacter.h"
+#include "SmartObjectSubsystem.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Hearing.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "Navigation/CrowdFollowingComponent.h"
+#include "GenericTeamAgentInterface.h"
 
-AStealthAIController::AStealthAIController()
+AStealthAIController::AStealthAIController(const FObjectInitializer& ObjectInitializer) 
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
 {
 	PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
 	
@@ -20,14 +24,14 @@ AStealthAIController::AStealthAIController()
 	SightConfig->AutoSuccessRangeFromLastSeenLocation  = 200.f;
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	
 	HearingConfig = CreateDefaultSubobject<UAISenseConfig_Hearing>(TEXT("HearingConfig"));
 	HearingConfig->HearingRange = 1500.f;
 	HearingConfig->SetMaxAge(3.f);
 	HearingConfig->DetectionByAffiliation.bDetectEnemies = true;
 	HearingConfig->DetectionByAffiliation.bDetectNeutrals = true;
-	HearingConfig->DetectionByAffiliation.bDetectFriendlies = true;
+	HearingConfig->DetectionByAffiliation.bDetectFriendlies = false;
 	
 	PerceptionComponent->ConfigureSense(*SightConfig);
 	PerceptionComponent->ConfigureSense(*HearingConfig);
@@ -39,6 +43,9 @@ AStealthAIController::AStealthAIController()
 void AStealthAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	
+	SetGenericTeamId(FGenericTeamId(1));
+	
 	AStealthGuardCharacter* Guard = Cast<AStealthGuardCharacter>(InPawn);
 	if (Guard == nullptr) return;
 	
@@ -64,6 +71,8 @@ void AStealthAIController::OnPossess(APawn* InPawn)
 
 void AStealthAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ReleaseGuardPost();
+	
 	if (UWorld* World = GetWorld())
 	{
 		if (UStealthAlertSubsystem* Alert = World->GetSubsystem<UStealthAlertSubsystem>())
@@ -71,6 +80,8 @@ void AStealthAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 			Alert->OnAlertRaised.RemoveDynamic(this, &AStealthAIController::OnAlertReceived);
 		}
 	}
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -139,4 +150,18 @@ void AStealthAIController::OnAlertReceived(FVector AlertLocation, AActor* AlertI
 	}
 	
 	Blackboard->SetValueAsVector(InvestigateLocationKey, AlertLocation);
+}
+
+void AStealthAIController::ReleaseGuardPost()
+{
+	if (!ClaimedGuardPost.IsValid())
+	{
+		return;
+	}
+	
+	if (USmartObjectSubsystem* SOSubsystem = USmartObjectSubsystem::GetCurrent(GetWorld()))
+	{
+		SOSubsystem->Release(ClaimedGuardPost);
+	}
+	ClaimedGuardPost.Invalidate();
 }
