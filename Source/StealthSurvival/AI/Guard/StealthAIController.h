@@ -17,6 +17,7 @@ public:
 	AStealthAIController(const FObjectInitializer& ObjectInitializer);
 	void SetClaimedGuardPost(const FSmartObjectClaimHandle& Handle) {ClaimedGuardPost = Handle;}
 	void ReleaseGuardPost();
+	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 private:
 	FSmartObjectClaimHandle ClaimedGuardPost;
@@ -32,6 +33,9 @@ protected:
 	
 	UFUNCTION()
 	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+	UFUNCTION()
+	void OnTargetForgotten(AActor* Actor);
 	
 	UFUNCTION()
 	void OnAlertReceived(FVector AlertLocation, AActor* AlertInstigator);

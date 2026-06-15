@@ -9,6 +9,7 @@ AStealthGuardCharacter::AStealthGuardCharacter()
 {
 	AIControllerClass = AStealthAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+	TeamId = FGenericTeamId(1);
 }
 
 void AStealthGuardCharacter::Die()

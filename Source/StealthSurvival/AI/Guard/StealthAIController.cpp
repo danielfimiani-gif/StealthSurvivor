@@ -38,6 +38,7 @@ AStealthAIController::AStealthAIController(const FObjectInitializer& ObjectIniti
 	PerceptionComponent->SetDominantSense(UAISenseConfig_Sight::StaticClass());
 	
 	PerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AStealthAIController::OnTargetPerceptionUpdated);
+	PerceptionComponent->OnTargetPerceptionForgotten.AddDynamic(this, &AStealthAIController::OnTargetForgotten);
 }
 
 void AStealthAIController::OnPossess(APawn* InPawn)
@@ -99,15 +100,9 @@ void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 	
 	const bool bIsSight = (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>()); 
 	
-	if (!bIsSight && Stimulus.WasSuccessfullySensed() && CurrentTarget != nullptr)
+	if (!bIsSight && Stimulus.WasSuccessfullySensed() && CurrentTarget != nullptr && CurrentTarget != Actor)
 	{
 		return;
-	}
-	
-	if (CurrentTarget == Actor)
-	{
-		Blackboard->ClearValue(TargetActorKey);
-		Blackboard->SetValueAsBool(HasLineOfSightKey, false);
 	}
 	
 	if (Stimulus.WasSuccessfullySensed())
@@ -125,11 +120,13 @@ void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 		if (bIsSight)
 		{
 			Blackboard->SetValueAsBool(HasLineOfSightKey, false);
+			Blackboard->SetValueAsVector(LastKnownLocationKey, Stimulus.StimulusLocation);
 		}
 		
-		if (Stimulus.IsExpired())
+		if (Stimulus.IsExpired() && CurrentTarget == Actor)
 		{
-			Blackboard->ClearValue((TargetActorKey));
+			Blackboard->ClearValue(TargetActorKey);
+			Blackboard->SetValueAsBool(HasLineOfSightKey, false);
 		}
 	}
 }
@@ -164,4 +161,37 @@ void AStealthAIController::ReleaseGuardPost()
 		SOSubsystem->Release(ClaimedGuardPost);
 	}
 	ClaimedGuardPost.Invalidate();
+}
+
+ETeamAttitude::Type AStealthAIController::GetTeamAttitudeTowards(const AActor& Other) const
+{
+	const IGenericTeamAgentInterface* TeamAgent = Cast<IGenericTeamAgentInterface>(&Other);
+	if (!TeamAgent)
+	{
+		return ETeamAttitude::Neutral;
+	}
+	
+	if (TeamAgent->GetGenericTeamId() == GetGenericTeamId())
+	{
+		return ETeamAttitude::Friendly;
+	}
+
+	return ETeamAttitude::Hostile;
+}
+
+void AStealthAIController::OnTargetForgotten(AActor* Actor)
+{
+	if (Actor == nullptr || Blackboard == nullptr)
+	{
+		return;
+	}
+	
+	static const FName TargetActorKey = TEXT("TargetActor");
+	static const FName HasLineOfSightKey = TEXT("HasLineOfSight");
+	
+	if (Cast<AActor>(Blackboard->GetValueAsObject(TargetActorKey)) == Actor)
+	{
+		Blackboard->ClearValue(TargetActorKey);
+		Blackboard->SetValueAsBool(HasLineOfSightKey, false);
+	}
 }

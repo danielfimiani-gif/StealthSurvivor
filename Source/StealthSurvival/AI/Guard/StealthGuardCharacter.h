@@ -16,7 +16,8 @@ public:
 	UBehaviorTree* GetBehaviorTree() const {return BehaviorTree;}
 	
 	void Die();
-	virtual FGenericTeamId GetGenericTeamId() const override { return FGenericTeamId(1); }
+	virtual void SetGenericTeamId(const FGenericTeamId& NewTeamID) override { TeamId = NewTeamID; }
+	virtual FGenericTeamId GetGenericTeamId() const override { return TeamId; }
 	
 	UFUNCTION(BlueprintPure, Category = "AI")
 	bool IsDead() const { return bIsDead; }
@@ -30,4 +31,6 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category="AI", meta=(ClampMin="0"))
 	float DeathLifespan = 5.f;
+private:
+	FGenericTeamId TeamId;
 };

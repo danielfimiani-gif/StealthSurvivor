@@ -13,6 +13,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "Guard/StealthGuardCharacter.h"
 #include "Items/StealthThrowable.h"
+#include "GameFramework/PlayerController.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 {
@@ -26,7 +27,7 @@ AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 
 	// Configure character movement
 	UCharacterMovementComponent* MovementComp = GetCharacterMovement();
-	MovementComp->bOrientRotationToMovement = true;
+	MovementComp->bOrientRotationToMovement = false;
 	MovementComp->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
 
 	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
@@ -43,9 +44,14 @@ AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->bUsePawnControlRotation = true;
-
+	CameraBoom->TargetArmLength = 900.0f;
+	CameraBoom->SetRelativeRotation(FRotator(-60.0f, 0.0f, 0.0f));
+	CameraBoom->bUsePawnControlRotation = false;
+	CameraBoom->bInheritPitch = false;
+	CameraBoom->bInheritYaw = false;
+	CameraBoom->bInheritRoll = false;
+	CameraBoom->bDoCollisionTest = false;
+	
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
@@ -66,10 +72,6 @@ void AStealthSurvivalCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AStealthSurvivalCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AStealthSurvivalCharacter::Look);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AStealthSurvivalCharacter::Look);
 		
 		// Sprint
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AStealthSurvivalCharacter::StartSprint);
@@ -111,22 +113,17 @@ void AStealthSurvivalCharacter::Look(const FInputActionValue& Value)
 
 void AStealthSurvivalCharacter::DoMove(float Right, float Forward)
 {
-	if (GetController() != nullptr)
+	if (GetController() == nullptr)
 	{
-		// find out which way is forward
-		const FRotator Rotation = GetController()->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, Forward);
-		AddMovementInput(RightDirection, Right);
+		return;
 	}
+	
+	const FRotator CamYaw(0.f, CameraBoom->GetRelativeRotation().Yaw, 0.f);
+	const FVector ForwardDirection = FRotationMatrix(CamYaw).GetUnitAxis(EAxis::X);
+	const FVector RightDirection = FRotationMatrix(CamYaw).GetUnitAxis(EAxis::Y);
+	
+	AddMovementInput(ForwardDirection, Forward);
+	AddMovementInput(RightDirection, Right);
 }
 
 void AStealthSurvivalCharacter::DoLook(float Yaw, float Pitch)
@@ -206,6 +203,9 @@ float AStealthSurvivalCharacter::GetCurrentNoiseRange() const
 void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	
+	AimAtCursor();
+	UpdateCameraPan(DeltaSeconds);
 	
 	NoiseEmissionTimer += DeltaSeconds;
 	if (NoiseEmissionTimer < NoiseEmissionInterval)
@@ -305,4 +305,128 @@ void AStealthSurvivalCharacter::ExecuteThrow()
 	{
 		Throwable->Launch(LaunchVelocity);
 	}
+}
+
+UAISense_Sight::EVisibilityResult AStealthSurvivalCharacter::CanBeSeenFrom(
+	const FCanBeSeenFromContext& Context, 
+	FVector& OutSeenLocation, int32& OutNumberOfLoSChecksPerformed, 
+	int32& OutNumberOfAsyncLosCheckRequested, float& OutSightStrength, 
+	int32* UserData, const FOnPendingVisibilityQueryProcessedDelegate* Delegate)
+{
+	OutNumberOfAsyncLosCheckRequested = 0;
+	OutSightStrength = 1.f;
+	
+	const FVector TargetLocation = GetActorLocation();
+	
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(AILineOfSight), true, Context.IgnoreActor);
+	Params.AddIgnoredActor(this);
+	
+	const bool bHit = GetWorld()->LineTraceSingleByChannel(
+		Hit, Context.ObserverLocation, TargetLocation, ECC_Visibility, Params
+	);
+	
+	OutNumberOfLoSChecksPerformed = 1;
+	
+	if (bHit)
+	{
+		return UAISense_Sight::EVisibilityResult::NotVisible;
+	}
+	
+	if (IsInCover())
+	{
+		return UAISense_Sight::EVisibilityResult::NotVisible;
+	}
+	
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,TEXT("-> VISIBLE"));
+	}
+	
+	OutSeenLocation = TargetLocation;
+	return UAISense_Sight::EVisibilityResult::Visible;
+}
+
+void AStealthSurvivalCharacter::AimAtCursor()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr)
+	{
+		return;
+	}
+	
+	FVector WorldOrigin, WorldDirection;
+	if (!PC->DeprojectMousePositionToWorld(WorldOrigin, WorldDirection))
+	{
+		return;
+	}
+	
+	if (FMath::IsNearlyZero(WorldDirection.Z))
+	{
+		return;
+	}
+	
+	const FVector PlayerLoc = GetActorLocation();
+	const float T = (PlayerLoc.Z - WorldOrigin.Z) / WorldDirection.Z;
+	if (T < 0.f)
+	{
+		return;
+	}
+	
+	const FVector CursorWorld = WorldOrigin + WorldDirection * T;
+	
+	FVector ToCursor = CursorWorld - PlayerLoc;
+	ToCursor.Z = 0.f;
+	if (ToCursor.IsNearlyZero())
+	{
+		return;
+	}
+	
+	SetActorRotation(FRotator(0.f, ToCursor.Rotation().Yaw, 0.f));
+}
+
+void AStealthSurvivalCharacter::UpdateCameraPan(float DeltaSeconds)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC == nullptr) return;
+
+	const bool bIsMoving = !GetCharacterMovement()->GetCurrentAcceleration().IsNearlyZero();
+
+    if (bIsMoving)
+    {
+        CameraPanOffset = FMath::VInterpTo(CameraPanOffset, FVector::ZeroVector, DeltaSeconds, CameraReturnSpeed);
+    }
+    else
+    {
+        float MouseX, MouseY;
+        int32 ViewX, ViewY;
+        PC->GetViewportSize(ViewX, ViewY);
+
+        if (PC->GetMousePosition(MouseX, MouseY) && ViewX > 0 && ViewY > 0)
+        {
+            const float EdgeX = ViewX * EdgeScrollZone;
+            const float EdgeY = ViewY * EdgeScrollZone;
+
+            FVector2D PanDir = FVector2D::ZeroVector;
+            if (MouseX <= EdgeX)              PanDir.X = -1.f;
+            else if (MouseX >= ViewX - EdgeX) PanDir.X =  1.f;
+            if (MouseY <= EdgeY)              PanDir.Y = -1.f;
+            else if (MouseY >= ViewY - EdgeY) PanDir.Y =  1.f;
+
+            if (!PanDir.IsZero())
+            {
+                const FRotator CamYaw(0.f, CameraBoom->GetRelativeRotation().Yaw,0.f);
+                const FVector Fwd   = FRotationMatrix(CamYaw).GetUnitAxis(EAxis::X);
+                const FVector Right = FRotationMatrix(CamYaw).GetUnitAxis(EAxis::Y);
+
+                FVector WorldPan = (Fwd * -PanDir.Y) + (Right * PanDir.X);
+                WorldPan.Normalize();
+
+                CameraPanOffset += WorldPan * CameraPanSpeed * DeltaSeconds;
+                CameraPanOffset = CameraPanOffset.GetClampedToMaxSize(CameraPanMaxDistance);
+            }
+        }
+    }
+
+    CameraBoom->TargetOffset = CameraPanOffset;
 }

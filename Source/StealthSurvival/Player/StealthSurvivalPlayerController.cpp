@@ -12,7 +12,13 @@
 void AStealthSurvivalPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
+	bShowMouseCursor = true;
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::LockAlways);
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	
 	// only spawn touch controls on local player controllers
 	if (SVirtualJoystick::ShouldDisplayTouchInterface() && IsLocalPlayerController())
 	{
@@ -23,13 +29,11 @@ void AStealthSurvivalPlayerController::BeginPlay()
 		{
 			// add the controls to the player screen
 			MobileControlsWidget->AddToPlayerScreen(0);
-
-		} else {
-
+		} 
+		else 
+		{
 			UE_LOG(LogStealthSurvival, Error, TEXT("Could not spawn mobile controls widget."));
-
 		}
-
 	}
 }
 

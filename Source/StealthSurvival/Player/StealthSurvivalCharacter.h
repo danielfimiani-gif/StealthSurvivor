@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "Perception/AISightTargetInterface.h"
 #include "StealthSurvivalCharacter.generated.h"
 
 class USpringArmComponent;
@@ -21,7 +22,7 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
  *  Implements a controllable orbiting camera
  */
 UCLASS(abstract)
-class AStealthSurvivalCharacter : public ACharacter
+class AStealthSurvivalCharacter : public ACharacter, public IAISightTargetInterface
 {
 	GENERATED_BODY()
 
@@ -35,8 +36,8 @@ class AStealthSurvivalCharacter : public ACharacter
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UAIPerceptionStimuliSourceComponent* PerceptionStimuliSource;
-protected:
 
+protected:
 	/** Jump to Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
@@ -101,22 +102,36 @@ protected:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Throw")
 	FVector ThrowSpawnOffset = FVector(80.f,0.f, 50.f);
-public:
 
+public:
 	/** Constructor */
 	AStealthSurvivalCharacter();	
 	
 	virtual void Tick(float DeltaSeconds) override;
 
-protected:
+	virtual UAISense_Sight::EVisibilityResult CanBeSeenFrom(
+		const FCanBeSeenFromContext& Context, 
+		FVector& OutSeenLocation, 
+		int32& OutNumberOfLoSChecksPerformed, 
+		int32& OutNumberOfAsyncLosCheckRequested, 
+		float& OutSightStrength, 
+		int32* UserData = nullptr, 
+		const FOnPendingVisibilityQueryProcessedDelegate* Delegate = nullptr
+	) override;
+	
+	void AddCoverSource() { ++CoverSourceCount; }
+	void RemoveCoverSource() { CoverSourceCount = FMath::Max(0, CoverSourceCount - 1); }
+	
+	UFUNCTION(BlueprintPure, Category="Stealth|Cover")
+	bool IsInCover() const {return CoverSourceCount > 0 && bIsCrouched; }
 
+protected:
 	/** Initialize input action bindings */
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	
 	void ExecuteTakeDown();
 	
 	void ExecuteThrow();
-protected:
 
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -127,8 +142,8 @@ protected:
 	void StartSprint();
 	void StopSprint();
 	void ToggleCrouch();
-public:
 
+public:
 	/** Handles move inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoMove(float Right, float Forward);
@@ -144,8 +159,7 @@ public:
 	/** Handles jump pressed inputs from either controls or UI interfaces */
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
-
-public:
+	
 	UFUNCTION(BlueprintPure, Category="Stealth")
 	bool IsSprinting() const { return bIsSprinting; }
 	
@@ -157,13 +171,33 @@ public:
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
 private:
 	void UpdateMovementSpeed();
+	void AimAtCursor();
+	
+	void UpdateCameraPan(float DeltaSeconds);
+	FVector CameraPanOffset = FVector::ZeroVector;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Pan", meta=(ClampMin="0"))
+	float CameraPanSpeed = 1500.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Pan", meta=(ClampMin="0"))
+	float CameraPanMaxDistance = 1200.f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Pan", meta=(ClampMin="0", ClampMax="0.5"))
+	float EdgeScrollZone = 0.05f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Pan", meta=(ClampMin="0"))
+	float CameraReturnSpeed = 8.f;
+	
 	bool bIsSprinting = false;
 	
 	float NoiseEmissionTimer = 0.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category="Stealth|Noise", meta=(ClampMin="0.5"))
 	float NoiseEmissionInterval = 0.2f;
+	
+	int32 CoverSourceCount = 0;
 };
 
