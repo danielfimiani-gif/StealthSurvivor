@@ -7,6 +7,8 @@
 #include "Components/StateTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
+#include "GameMode/StealthSurvivalGameMode.h"
+#include "Kismet/GameplayStatics.h"
 
 AStealthSecurityCamera::AStealthSecurityCamera()
 {
@@ -108,4 +110,34 @@ void AStealthSecurityCamera::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 		LastSeenLocation = Stimulus.StimulusLocation;
 		TargetActor = nullptr;
 	}
+	
+	SetWatchingPlayer(Stimulus.WasSuccessfullySensed());
+}
+
+void AStealthSecurityCamera::SetWatchingPlayer(bool bNewWatching)
+{
+	if (bIsWatchingPlayer == bNewWatching)
+	{
+		return;
+	}
+	
+	bIsWatchingPlayer = bNewWatching;
+	
+	if (AStealthSurvivalGameMode* GM = Cast<AStealthSurvivalGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		if (bNewWatching)
+		{
+			GM->AddWatcher();
+		}
+		else
+		{
+			GM->RemoveWatcher();
+		}
+	}
+}
+
+void AStealthSecurityCamera::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	SetWatchingPlayer(false);
+	Super::EndPlay(EndPlayReason);
 }

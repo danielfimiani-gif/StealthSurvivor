@@ -1,5 +1,8 @@
 ﻿#include "StealthAIController.h"
 
+#include "Player/StealthSurvivalCharacter.h"
+#include "GameMode/StealthSurvivalGameMode.h"
+#include "Kismet/GameplayStatics.h"
 #include "StealthAlertSubsystem.h"
 #include "StealthGuardCharacter.h"
 #include "SmartObjectSubsystem.h"
@@ -72,6 +75,7 @@ void AStealthAIController::OnPossess(APawn* InPawn)
 
 void AStealthAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	SetWatchingPlayer(false);
 	ReleaseGuardPost();
 	
 	if (UWorld* World = GetWorld())
@@ -123,11 +127,16 @@ void AStealthAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus 
 			Blackboard->SetValueAsVector(LastKnownLocationKey, Stimulus.StimulusLocation);
 		}
 		
-		if (Stimulus.IsExpired() && CurrentTarget == Actor)
+		if (Stimulus.IsExpired() && CurrentTarget  == Actor)
 		{
 			Blackboard->ClearValue(TargetActorKey);
 			Blackboard->SetValueAsBool(HasLineOfSightKey, false);
 		}
+	}
+	
+	if (bIsSight && Actor->IsA<AStealthSurvivalCharacter>())
+	{
+		SetWatchingPlayer(Stimulus.WasSuccessfullySensed());
 	}
 }
 
@@ -193,5 +202,27 @@ void AStealthAIController::OnTargetForgotten(AActor* Actor)
 	{
 		Blackboard->ClearValue(TargetActorKey);
 		Blackboard->SetValueAsBool(HasLineOfSightKey, false);
+	}
+}
+
+void AStealthAIController::SetWatchingPlayer(bool bNewWatching)
+{
+	if (bIsWatchingPlayer == bNewWatching)
+	{
+		return;
+	}
+	
+	bIsWatchingPlayer = bNewWatching;
+	
+	if (AStealthSurvivalGameMode* GM = Cast<AStealthSurvivalGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		if (bNewWatching)
+		{
+			GM->AddWatcher();
+		}
+		else
+		{
+			GM->RemoveWatcher();
+		}
 	}
 }

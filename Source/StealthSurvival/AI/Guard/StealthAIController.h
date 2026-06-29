@@ -21,6 +21,8 @@ public:
 	
 private:
 	FSmartObjectClaimHandle ClaimedGuardPost;
+	bool bIsWatchingPlayer = false;
+	void SetWatchingPlayer(bool bNewWatching);
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category="Perception")
 	TObjectPtr<UAISenseConfig_Sight> SightConfig;

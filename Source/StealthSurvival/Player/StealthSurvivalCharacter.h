@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Perception/AISightTargetInterface.h"
+#include "Interaction/Interactable.h"
 #include "StealthSurvivalCharacter.generated.h"
 
 class USpringArmComponent;
@@ -66,6 +67,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* ThrowAction;
 	
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Stealth|Locomotion", meta=(ClampMin="0"))
 	float WalkSpeed = 350.f;
@@ -121,6 +124,13 @@ public:
 	
 	void AddCoverSource() { ++CoverSourceCount; }
 	void RemoveCoverSource() { CoverSourceCount = FMath::Max(0, CoverSourceCount - 1); }
+	
+	void SetInteractableInRange(const TScriptInterface<IInteractable>& Interactable); 
+	void ClearInteractableInRange(const TScriptInterface<IInteractable>& Interactable);
+	void EnterHidingSpot(AActor* Spot, const FTransform& SlotTransform);
+	
+	UFUNCTION(BlueprintPure, Category="Stealth|Hide")
+	bool IsHidden() { return bIsHidden; }
 	
 	UFUNCTION(BlueprintPure, Category="Stealth|Cover")
 	bool IsInCover() const {return CoverSourceCount > 0 && bIsCrouched; }
@@ -179,6 +189,25 @@ private:
 	void UpdateCameraPan(float DeltaSeconds);
 	FVector CameraPanOffset = FVector::ZeroVector;
 	
+	void UpdateCameraOcclusion();
+	
+	void SetOccluderFade(AActor* Occluder, float FadeValue);
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Occlusion", meta=(ClampMin="0", ClampMax="1"))
+	float OccluderFadeOpacity = 0.3f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Occlusion")
+	FName OccluderFadeParameter = "Fade";
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Occlusion", meta=(ClampMin="0"))
+	float OcclusionProbeRadius = 25.f;
+	
+	UPROPERTY()
+	TSet<TObjectPtr<AActor>> HiddenOccluders;
+	
+	UPROPERTY()
+	TObjectPtr<AActor> CurrentHidingSpot;
+	
 	UPROPERTY(EditDefaultsOnly, Category="Camera|Pan", meta=(ClampMin="0"))
 	float CameraPanSpeed = 1500.f;
 	
@@ -199,5 +228,14 @@ private:
 	float NoiseEmissionInterval = 0.2f;
 	
 	int32 CoverSourceCount = 0;
+	
+	void Interact();
+	void ExitHidingSpot();
+	
+	bool bIsHidden = false;
+	FTransform PreHideTransform;
+	
+	UPROPERTY()
+	TScriptInterface<IInteractable> InteractableInRange;
 };
 

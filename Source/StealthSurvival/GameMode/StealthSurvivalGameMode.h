@@ -1,23 +1,40 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "StealthSurvivalGameMode.generated.h"
 
-/**
- *  Simple GameMode for a third person game
- */
+class AStealthSurvivalGameState;
+
 UCLASS(abstract)
 class AStealthSurvivalGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
-	
-	/** Constructor */
 	AStealthSurvivalGameMode();
+	
+	virtual void Tick(float DeltaSecondsDeltaTime) override;
+	
+	void AddWatcher();
+	void RemoveWatcher();
+	
+	void NotifiObjectiveStolen();
+	void NotifyPlayerReachedExit();
+	
+protected:
+	void TriggerWin();
+	void TriggerLose();
+	
+	AStealthSurvivalGameState* GetStealthSurvivalGameState() const;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Detection", meta=(ClampMin = "0"))
+	float DetectionRiseRate = 0.5f;
+	
+	UPROPERTY(EditDefaultsOnly, Category="Detection", meta=(ClampMin = "0"))
+	float DetectionFallRate = 0.2f;
+	
+	int32 ActiveWatchers = 0;
 };
 
 

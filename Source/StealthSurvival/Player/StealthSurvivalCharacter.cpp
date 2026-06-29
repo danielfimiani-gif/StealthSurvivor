@@ -14,6 +14,7 @@
 #include "Guard/StealthGuardCharacter.h"
 #include "Items/StealthThrowable.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/MeshComponent.h"
 
 AStealthSurvivalCharacter::AStealthSurvivalCharacter()
 {
@@ -86,6 +87,9 @@ void AStealthSurvivalCharacter::SetupPlayerInputComponent(UInputComponent* Playe
 		
 		// Throw
 		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started,this, &AStealthSurvivalCharacter::ExecuteThrow);
+	
+		// Hide
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AStealthSurvivalCharacter::Interact);
 	}
 	else
 	{
@@ -206,6 +210,7 @@ void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
 	
 	AimAtCursor();
 	UpdateCameraPan(DeltaSeconds);
+	UpdateCameraOcclusion();
 	
 	NoiseEmissionTimer += DeltaSeconds;
 	if (NoiseEmissionTimer < NoiseEmissionInterval)
@@ -313,6 +318,11 @@ UAISense_Sight::EVisibilityResult AStealthSurvivalCharacter::CanBeSeenFrom(
 	int32& OutNumberOfAsyncLosCheckRequested, float& OutSightStrength, 
 	int32* UserData, const FOnPendingVisibilityQueryProcessedDelegate* Delegate)
 {
+	if (bIsHidden)
+	{
+		return UAISense_Sight::EVisibilityResult::NotVisible;
+	}
+	
 	OutNumberOfAsyncLosCheckRequested = 0;
 	OutSightStrength = 1.f;
 	
@@ -338,17 +348,17 @@ UAISense_Sight::EVisibilityResult AStealthSurvivalCharacter::CanBeSeenFrom(
 		return UAISense_Sight::EVisibilityResult::NotVisible;
 	}
 	
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 0.f, FColor::Red,TEXT("-> VISIBLE"));
-	}
-	
 	OutSeenLocation = TargetLocation;
 	return UAISense_Sight::EVisibilityResult::Visible;
 }
 
 void AStealthSurvivalCharacter::AimAtCursor()
 {
+	if (bIsHidden)
+	{
+		return;
+	}
+	
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (PC == nullptr)
 	{
@@ -429,4 +439,154 @@ void AStealthSurvivalCharacter::UpdateCameraPan(float DeltaSeconds)
     }
 
     CameraBoom->TargetOffset = CameraPanOffset;
+}
+
+void AStealthSurvivalCharacter::Interact()
+{
+	if (bIsHidden)
+	{
+		ExitHidingSpot();
+		return;
+	}
+	
+	if (InteractableInRange)
+	{
+		InteractableInRange->Interact(this);
+	}
+}
+
+void AStealthSurvivalCharacter::EnterHidingSpot(AActor* Spot, const FTransform& SlotTransform)
+{
+	if (bIsHidden)
+	{
+		return;
+	}
+	
+	bIsHidden = true;
+	CurrentHidingSpot = Spot;
+	PreHideTransform = GetActorTransform();
+	
+	SetActorLocation(SlotTransform.GetLocation());
+	SetActorRotation(SlotTransform.GetRotation());
+	
+	GetCharacterMovement()->StopMovementImmediately();
+	GetCharacterMovement()->DisableMovement();
+	GetMesh()->SetVisibility(false, true);
+}
+
+void AStealthSurvivalCharacter::ExitHidingSpot()
+{
+	if (!bIsHidden)
+	{
+		return;
+	}
+	
+	bIsHidden = false;
+	CurrentHidingSpot = nullptr;
+	
+	SetActorLocation(PreHideTransform.GetLocation());
+	SetActorRotation(PreHideTransform.GetRotation());
+	
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+	GetMesh()->SetVisibility(true, true);
+}
+
+void AStealthSurvivalCharacter::UpdateCameraOcclusion()
+{
+	if (FollowCamera == nullptr)
+	{
+		return;
+	}
+	
+	const FVector Start = FollowCamera->GetComponentLocation();
+	const FVector End = GetActorLocation();
+	
+	TArray<FHitResult> Hits;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	if (CurrentHidingSpot != nullptr)
+	{
+		Params.AddIgnoredActor(CurrentHidingSpot);
+	}
+	
+	GetWorld()->SweepMultiByChannel(
+		Hits, Start, End, FQuat::Identity, ECC_Visibility,
+		FCollisionShape::MakeSphere(OcclusionProbeRadius),Params
+	);
+	
+	TSet<TObjectPtr<AActor>> CurrenOccluders;
+	for (const FHitResult& Hit : Hits)
+	{
+		AActor* HitActor = Hit.GetActor();
+		if (HitActor == nullptr) continue;
+		if (HitActor->IsA<APawn>()) continue;
+		
+		CurrenOccluders.Add(HitActor);
+		if (!HiddenOccluders.Contains(HitActor))
+		{
+			SetOccluderFade(HitActor, OccluderFadeOpacity);
+			HiddenOccluders.Add(HitActor);
+		}
+	}
+		
+	for (auto It = HiddenOccluders.CreateIterator(); It; ++It)
+	{
+		if (!CurrenOccluders.Contains(*It))
+		{
+			if (*It)
+			{
+				SetOccluderFade(*It,  1.f);
+			}
+			It.RemoveCurrent();
+		}
+	}
+}
+
+void AStealthSurvivalCharacter::SetOccluderFade(AActor* Occluder, float FadeValue)
+{
+	if (Occluder == nullptr)
+	{
+		return;
+	}
+	
+	TArray<UMeshComponent*> Meshes;
+	Occluder->GetComponents<UMeshComponent>(Meshes);
+	for (UMeshComponent* UMesh : Meshes)
+	{
+		if (UMesh != nullptr)
+		{
+			UMesh->SetScalarParameterValueOnMaterials(OccluderFadeParameter, FadeValue);
+		}
+	}
+}
+
+void AStealthSurvivalCharacter::SetInteractableInRange(const TScriptInterface<IInteractable>& Interactable)
+{
+	if (InteractableInRange.GetObject() == Interactable.GetObject())
+	{
+		return;
+	}
+	
+	if (InteractableInRange.GetObject() != nullptr)
+	{
+		InteractableInRange->OnEndFocus();
+	}
+	
+	InteractableInRange = Interactable;
+	
+	if (InteractableInRange.GetObject() != nullptr)
+	{
+		InteractableInRange->OnBeginFocus();
+	}
+}
+
+void AStealthSurvivalCharacter::ClearInteractableInRange(const TScriptInterface<IInteractable>& Interactable)
+{
+	if (InteractableInRange.GetObject() != Interactable.GetObject())
+	{
+		return;
+	}
+	
+	InteractableInRange->OnEndFocus();
+	InteractableInRange = nullptr;
 }
