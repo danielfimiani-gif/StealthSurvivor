@@ -1,5 +1,7 @@
 #include "StealthSurvivalGameMode.h"
 #include "StealthSurvivalGameState.h"
+#include "Kismet/GameplayStatics.h"
+#include "Player/StealthSurvivalPlayerController.h"
 
 AStealthSurvivalGameMode::AStealthSurvivalGameMode()
 {
@@ -88,6 +90,11 @@ void AStealthSurvivalGameMode::TriggerWin()
 	}
 	
 	GS->SetMatchState(EStealthMatchState::Won);
+	
+	if (AStealthSurvivalPlayerController* PC = Cast<AStealthSurvivalPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		PC->ShowEndScreen();
+	}
 }
 
 void AStealthSurvivalGameMode::TriggerLose()
@@ -100,4 +107,8 @@ void AStealthSurvivalGameMode::TriggerLose()
 	
 	GS->SetMatchState(EStealthMatchState::Lost);
 	GS->SetDetectionLevel(1.f);
+	if (AStealthSurvivalPlayerController* PC = Cast<AStealthSurvivalPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		PC->ShowEndScreen();
+	}
 }

@@ -9,6 +9,8 @@
 #include "StealthSurvival.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 #include "UI/StealthHUDWidget.h"
+#include "UI/StealthEndScreenWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 void AStealthSurvivalPlayerController::BeginPlay()
 {
@@ -72,4 +74,26 @@ void AStealthSurvivalPlayerController::SetupInputComponent()
 			}
 		}
 	}
+}
+
+void AStealthSurvivalPlayerController::ShowEndScreen()
+{
+	if (EndScreenWidget != nullptr || EndScreenWidgetClass == nullptr)
+	{
+		return;
+	}
+	
+	EndScreenWidget = CreateWidget<UStealthEndScreenWidget>(this, EndScreenWidgetClass);
+	if (EndScreenWidget == nullptr)
+	{
+		return;
+	}
+	
+	EndScreenWidget->AddToViewport(10);
+	bShowMouseCursor = true;
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(EndScreenWidget->TakeWidget());
+	SetInputMode(InputMode);
+	
+	UGameplayStatics::SetGamePaused(this, true);
 }

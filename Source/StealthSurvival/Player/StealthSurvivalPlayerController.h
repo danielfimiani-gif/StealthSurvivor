@@ -18,6 +18,9 @@ class AStealthSurvivalPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 	
+public:
+	void ShowEndScreen();	
+	
 protected:
 
 	/** Input Mapping Contexts */
@@ -34,6 +37,12 @@ protected:
 
 	/** Pointer to the mobile controls widget */
 	TObjectPtr<UUserWidget> MobileControlsWidget;
+	
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<class UStealthEndScreenWidget> EndScreenWidgetClass;
+	
+	UPROPERTY()
+	TObjectPtr<class UStealthEndScreenWidget> EndScreenWidget;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

@@ -21,6 +21,9 @@ public:
 	
 	UFUNCTION(BlueprintPure, Category = "AI")
 	bool IsDead() const { return bIsDead; }
+	
+	const TArray<TObjectPtr<AActor>>& GetPatrolPoints() const { return PatrolPoints; }
+	
 protected:
 	AStealthGuardCharacter();
 	
@@ -31,6 +34,10 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category="AI", meta=(ClampMin="0"))
 	float DeathLifespan = 5.f;
+	
+	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category="Patrol")
+	TArray<TObjectPtr<AActor>> PatrolPoints;
+	
 private:
 	FGenericTeamId TeamId;
 };
