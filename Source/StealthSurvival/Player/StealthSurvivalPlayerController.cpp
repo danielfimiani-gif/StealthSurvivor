@@ -8,6 +8,7 @@
 #include "Blueprint/UserWidget.h"
 #include "StealthSurvival.h"
 #include "Widgets/Input/SVirtualJoystick.h"
+#include "UI/StealthHUDWidget.h"
 
 void AStealthSurvivalPlayerController::BeginPlay()
 {
@@ -33,6 +34,15 @@ void AStealthSurvivalPlayerController::BeginPlay()
 		else 
 		{
 			UE_LOG(LogStealthSurvival, Error, TEXT("Could not spawn mobile controls widget."));
+		}
+	}
+	
+	if (HUDWidgetClass != nullptr)
+	{
+		HUDWidget = CreateWidget<UStealthHUDWidget>(this, HUDWidgetClass);
+		if (HUDWidget != nullptr)
+		{
+			HUDWidget->AddToViewport();
 		}
 	}
 }

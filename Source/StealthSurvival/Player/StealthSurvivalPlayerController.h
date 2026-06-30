@@ -40,5 +40,10 @@ protected:
 
 	/** Input mapping context setup */
 	virtual void SetupInputComponent() override;
-
+	
+	UPROPERTY(EditDefaultsOnly,  Category="UI")
+	TSubclassOf<class UStealthHUDWidget> HUDWidgetClass;
+	
+	UPROPERTY(EditDefaultsOnly,  Category="UI")
+	TObjectPtr<class UStealthHUDWidget> HUDWidget;
 };

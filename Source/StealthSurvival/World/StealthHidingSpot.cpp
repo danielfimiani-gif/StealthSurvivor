@@ -7,18 +7,21 @@
 AStealthHidingSpot::AStealthHidingSpot()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	USceneComponent* Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent = Root;
 	
 	FurnitureMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FurnitureMesh"));
-	RootComponent = FurnitureMesh;
+	FurnitureMesh->SetupAttachment(Root);
 	
 	InteractionVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionVolume"));
-	InteractionVolume->SetupAttachment(FurnitureMesh);
+	InteractionVolume->SetupAttachment(Root);
 	InteractionVolume->SetBoxExtent(FVector(120.0f, 120.0f, 100.0f));
 	InteractionVolume->SetCollisionProfileName(TEXT("Trigger"));
 	InteractionVolume->SetGenerateOverlapEvents(true);
 	
 	HideSlot = CreateDefaultSubobject<USceneComponent>(TEXT("HideSlot"));
-	HideSlot->SetupAttachment(FurnitureMesh);
+	HideSlot->SetupAttachment(Root);
 	
 	InteractionVolume->OnComponentBeginOverlap.AddDynamic(this, &AStealthHidingSpot::OnVolumeBeginOverlap);
 	InteractionVolume->OnComponentEndOverlap.AddDynamic(this, &AStealthHidingSpot::OnVolumeEndOverlap);
