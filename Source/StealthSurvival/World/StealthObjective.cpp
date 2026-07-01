@@ -35,7 +35,7 @@ void AStealthObjective::Interact(AActor* Interactor)
 	
 	if (AStealthSurvivalGameMode* GM = Cast<AStealthSurvivalGameMode>(UGameplayStatics::GetGameMode(this)))
 	{
-		GM->NotifiObjectiveStolen();
+		GM->NotifyObjectiveStolen();
 	}
 	
 	Player->ClearInteractableInRange(this);

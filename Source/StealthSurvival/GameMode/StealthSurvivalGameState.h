@@ -31,6 +31,11 @@ public:
 	void SetHasObjective(bool value) { bHasObjective = value; }
 	void SetMatchState(EStealthMatchState value) { MatchState = value; }
 	
+	UFUNCTION(BlueprintPure, Category="Match")
+	bool HasKey(FName KeyId) const { return CollectedKeys.Contains(KeyId); }
+	
+	void AddKey(FName KeyId) { CollectedKeys.Add(KeyId); }
+	
 protected:
 	UPROPERTY(BlueprintReadOnly, Category="Match")
 	float DetectionLevel = 0.f;
@@ -40,4 +45,7 @@ protected:
 	
 	UPROPERTY(BlueprintReadOnly, Category="Match")
 	bool bHasObjective = false;
+	
+	UPROPERTY()
+	TSet<FName> CollectedKeys;
 };

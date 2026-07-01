@@ -19,8 +19,9 @@ public:
 	void AddWatcher();
 	void RemoveWatcher();
 	
-	void NotifiObjectiveStolen();
+	void NotifyObjectiveStolen();
 	void NotifyPlayerReachedExit();
+	void NotifyKeyCollected(FName KeyId);
 	
 protected:
 	void TriggerWin();

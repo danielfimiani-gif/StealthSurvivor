@@ -24,10 +24,22 @@ public:
 	
 protected:
 	UPROPERTY(EditDefaultsOnly, Category="HUD")
-	FText StealObjectiveText = FText::FromString(TEXT("Obtené la tarjeta"));
+	FText CardObjectiveText = FText::FromString(TEXT("Obtené la tarjeta de acceso"));
+
+	UPROPERTY(EditDefaultsOnly, Category="HUD")
+	FText StealObjectiveText = FText::FromString(TEXT("Robá los planos"));
 	
 	UPROPERTY(EditDefaultsOnly, Category="HUD")
+	FText FindCodeObjectiveText = FText::FromString(TEXT("Encontrá el código de acceso"));
+
+	UPROPERTY(EditDefaultsOnly, Category="HUD")
 	FText EscapeObjectiveText = FText::FromString(TEXT("Escapá a la zona segura"));
+
+	UPROPERTY(EditDefaultsOnly, Category="HUD")
+	FName AccessCardId = TEXT("AccessCard");
+
+	UPROPERTY(EditDefaultsOnly, Category="HUD")
+	FName EscapeCodeId = TEXT("EscapeCode");
 	
 private:
 	AStealthSurvivalGameState* GetStealthGameState() const;

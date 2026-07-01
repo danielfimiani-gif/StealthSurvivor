@@ -59,7 +59,7 @@ void AStealthSurvivalGameMode::RemoveWatcher()
 	ActiveWatchers = FMath::Max(0, ActiveWatchers - 1);
 }
 
-void AStealthSurvivalGameMode::NotifiObjectiveStolen()
+void AStealthSurvivalGameMode::NotifyObjectiveStolen()
 {
 	if (AStealthSurvivalGameState* GS = GetStealthSurvivalGameState())
 	{
@@ -110,5 +110,13 @@ void AStealthSurvivalGameMode::TriggerLose()
 	if (AStealthSurvivalPlayerController* PC = Cast<AStealthSurvivalPlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
 	{
 		PC->ShowEndScreen();
+	}
+}
+
+void AStealthSurvivalGameMode::NotifyKeyCollected(FName KeyId)
+{
+	if (AStealthSurvivalGameState* GS = GetStealthSurvivalGameState())
+	{
+		GS->AddKey(KeyId);
 	}
 }

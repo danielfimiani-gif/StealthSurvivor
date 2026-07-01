@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
-#include "SmartObjectRuntime.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "StealthAIController.generated.h"
 
@@ -15,12 +14,9 @@ class AStealthAIController : public AAIController
 	GENERATED_BODY()
 public:
 	AStealthAIController(const FObjectInitializer& ObjectInitializer);
-	void SetClaimedGuardPost(const FSmartObjectClaimHandle& Handle) {ClaimedGuardPost = Handle;}
-	void ReleaseGuardPost();
 	virtual ETeamAttitude::Type GetTeamAttitudeTowards(const AActor& Other) const override;
 	
 private:
-	FSmartObjectClaimHandle ClaimedGuardPost;
 	bool bIsWatchingPlayer = false;
 	void SetWatchingPlayer(bool bNewWatching);
 protected:

@@ -12,11 +12,31 @@ float UStealthHUDWidget::GetDetectionLevel() const
 FText UStealthHUDWidget::GetObjectiveText() const
 {
 	const AStealthSurvivalGameState* GS = GetStealthGameState();
-	if (GS != nullptr && GS->HasObjective())
+	if (GS == nullptr)
 	{
-		return EscapeObjectiveText;
+		return CardObjectiveText;
 	}
-	return StealObjectiveText;
+
+	// Paso 1: tarjeta de acceso
+	if (!GS->HasKey(AccessCardId))
+	{
+		return CardObjectiveText;
+	}
+
+	// Paso 2: robar los planos
+	if (!GS->HasObjective())
+	{
+		return StealObjectiveText;
+	}
+
+	// Paso 3: código de acceso
+	if (!GS->HasKey(EscapeCodeId))
+	{
+		return FindCodeObjectiveText;
+	}
+
+	// Paso 4: escapar
+	return EscapeObjectiveText;
 }
 
 bool UStealthHUDWidget::IsPlayerConcealed() const

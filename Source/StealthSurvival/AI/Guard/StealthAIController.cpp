@@ -5,7 +5,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "StealthAlertSubsystem.h"
 #include "StealthGuardCharacter.h"
-#include "SmartObjectSubsystem.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Perception/AIPerceptionComponent.h"
@@ -76,7 +75,6 @@ void AStealthAIController::OnPossess(APawn* InPawn)
 void AStealthAIController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	SetWatchingPlayer(false);
-	ReleaseGuardPost();
 	
 	if (UWorld* World = GetWorld())
 	{
@@ -156,20 +154,6 @@ void AStealthAIController::OnAlertReceived(FVector AlertLocation, AActor* AlertI
 	}
 	
 	Blackboard->SetValueAsVector(InvestigateLocationKey, AlertLocation);
-}
-
-void AStealthAIController::ReleaseGuardPost()
-{
-	if (!ClaimedGuardPost.IsValid())
-	{
-		return;
-	}
-	
-	if (USmartObjectSubsystem* SOSubsystem = USmartObjectSubsystem::GetCurrent(GetWorld()))
-	{
-		SOSubsystem->Release(ClaimedGuardPost);
-	}
-	ClaimedGuardPost.Invalidate();
 }
 
 ETeamAttitude::Type AStealthAIController::GetTeamAttitudeTowards(const AActor& Other) const
