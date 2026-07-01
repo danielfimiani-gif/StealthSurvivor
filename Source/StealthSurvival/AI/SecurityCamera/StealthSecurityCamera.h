@@ -34,13 +34,17 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Camera")
 	bool IsCameraActive() const {return bIsActive;}
-	
+
+	float GetHomeYaw() const {return HomeYaw;}
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	
 	void SetWatchingPlayer(bool bNewWatching);
 	bool bIsWatchingPlayer = false;
+
+	float HomeYaw = 0.f;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta=(AllowPrivateAccess = "true"))
 	USceneComponent* SceneRoot;

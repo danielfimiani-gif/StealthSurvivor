@@ -23,7 +23,7 @@ EStateTreeRunStatus FStealthSTTask_RotateSweep::EnterState(FStateTreeExecutionCo
 		return EStateTreeRunStatus::Failed;
 	}
 	
-	Data.InitialYaw = Camera->GetCameraPivot()->GetRelativeRotation().Yaw;
+	Data.InitialYaw = Camera->GetHomeYaw();
 	Data.CurrentOffset = 0.f;
 	Data.Direction = 1.f;
 	

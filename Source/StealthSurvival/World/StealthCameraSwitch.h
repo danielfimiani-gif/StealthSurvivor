@@ -23,7 +23,6 @@ public:
 	virtual void OnEndFocus() override;
 
 protected:
-	// Cámaras que este switch enciende/apaga (asignar POR INSTANCIA en el nivel)
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category="Switch")
 	TArray<TObjectPtr<AStealthSecurityCamera>> LinkedCameras;
 

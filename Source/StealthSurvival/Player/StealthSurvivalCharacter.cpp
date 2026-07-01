@@ -221,7 +221,7 @@ void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
 
 	if (bIsCrouched)
 	{
-		return; // agachado = silencio total, no emite ruido
+		return;
 	}
 
 	const float CurrentSpeed = GetVelocity().Size2D();

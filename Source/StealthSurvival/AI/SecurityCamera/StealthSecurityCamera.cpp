@@ -55,7 +55,12 @@ AStealthSecurityCamera::AStealthSecurityCamera()
 void AStealthSecurityCamera::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (CameraPivot != nullptr)
+	{
+		HomeYaw = CameraPivot->GetRelativeRotation().Yaw;
+	}
+
 	if (PerceptionComponent != nullptr)
 	{
 		PerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &AStealthSecurityCamera::OnPerceptionUpdated);

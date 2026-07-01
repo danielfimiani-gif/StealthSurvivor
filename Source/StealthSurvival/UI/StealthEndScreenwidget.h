@@ -12,11 +12,9 @@ class UStealthEndScreenWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	// Para que el WBP muestre "Ganaste" / "Perdiste"
 	UFUNCTION(BlueprintPure, Category="EndScreen")
 	bool IsVictory() const;
 
-	// Botones del WBP
 	UFUNCTION(BlueprintCallable, Category="EndScreen")
 	void RestartLevel();
 
