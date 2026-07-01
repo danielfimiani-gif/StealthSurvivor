@@ -50,7 +50,16 @@ void AStealthAIController::OnPossess(APawn* InPawn)
 	
 	AStealthGuardCharacter* Guard = Cast<AStealthGuardCharacter>(InPawn);
 	if (Guard == nullptr) return;
-	
+
+	if (SightConfig != nullptr && PerceptionComponent != nullptr)
+	{
+		SightConfig->SightRadius = Guard->GetSightRange();
+		SightConfig->LoseSightRadius = Guard->GetSightRange() + 300.f;
+		SightConfig->PeripheralVisionAngleDegrees = Guard->GetSightHalfAngle();
+		PerceptionComponent->ConfigureSense(*SightConfig);
+		PerceptionComponent->RequestStimuliListenerUpdate();
+	}
+
 	UBehaviorTree* BT = Guard->GetBehaviorTree();
 	if (BT == nullptr) return;
 	

@@ -218,7 +218,12 @@ void AStealthSurvivalCharacter::Tick(float DeltaSeconds)
 		return;
 	}
 	NoiseEmissionTimer = 0.f;
-	
+
+	if (bIsCrouched)
+	{
+		return; // agachado = silencio total, no emite ruido
+	}
+
 	const float CurrentSpeed = GetVelocity().Size2D();
 	if (CurrentSpeed < 5.f)
 	{

@@ -3,12 +3,12 @@
 #include "StealthAlertSubsystem.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/SpotLightComponent.h"
 #include "Components/StateTreeComponent.h"
 #include "Perception/AIPerceptionComponent.h"
 #include "Perception/AISenseConfig_Sight.h"
 #include "GameMode/StealthSurvivalGameMode.h"
 #include "Kismet/GameplayStatics.h"
+#include "Perception/AISense_Sight.h"
 
 AStealthSecurityCamera::AStealthSecurityCamera()
 {
@@ -28,12 +28,11 @@ AStealthSecurityCamera::AStealthSecurityCamera()
 	HeadMesh->SetupAttachment(CameraPivot);
 	HeadMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	
-	DetectionCone = CreateDefaultSubobject<USpotLightComponent>(TEXT("DetectionCone"));
+	DetectionCone = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DetectionCone"));
 	DetectionCone->SetupAttachment(CameraPivot);
-	DetectionCone->SetInnerConeAngle(PeripheralVisionAngle * 0.5f);
-	DetectionCone->SetOuterConeAngle(PeripheralVisionAngle);
-	DetectionCone->SetAttenuationRadius(SightRadius);
-	DetectionCone->SetIntensity(5000.f);
+	DetectionCone->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DetectionCone->SetCastShadow(false);
+	DetectionCone->SetVectorParameterValueOnMaterials(TEXT("ConeColor"), FVector(UnawareColor.R, UnawareColor.G, UnawareColor.B));
 	
 	PerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerception"));
 	
@@ -87,6 +86,11 @@ void AStealthSecurityCamera::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 		return;
 	}
 	
+	if (!bIsActive)
+	{
+		return;
+	}
+	
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		const bool bWasUnaware = (TargetActor == nullptr);
@@ -111,6 +115,12 @@ void AStealthSecurityCamera::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stim
 	}
 	
 	SetWatchingPlayer(Stimulus.WasSuccessfullySensed());
+	
+	if (DetectionCone != nullptr)
+	{
+		const FLinearColor C = (TargetActor != nullptr) ? AlertedColor : UnawareColor;
+		DetectionCone->SetVectorParameterValueOnMaterials(TEXT("ConeColor"), FVector(C.R, C.G, C.B));
+	}
 }
 
 void AStealthSecurityCamera::SetWatchingPlayer(bool bNewWatching)
@@ -139,4 +149,44 @@ void AStealthSecurityCamera::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	SetWatchingPlayer(false);
 	Super::EndPlay(EndPlayReason);
+}
+
+void AStealthSecurityCamera::SetCameraActive(bool bActive)
+{
+	if (bIsActive == bActive)
+	{
+		return;
+	}
+	
+	bIsActive = bActive;
+	
+	if (PerceptionComponent != nullptr)
+	{
+		PerceptionComponent->SetSenseEnabled(UAISense_Sight::StaticClass(), bActive);
+	}
+	
+	if (DetectionCone != nullptr)
+	{
+		DetectionCone->SetVisibility(bActive);
+	}
+	
+	if (StateTreeComponent != nullptr)
+	{
+		if (bActive)
+		{
+			StateTreeComponent->StartLogic();
+		}
+		else
+		{
+			StateTreeComponent->StopLogic(TEXT("Camera deactivated"));
+		}
+	}
+	
+	if (!bActive)
+	{
+		TargetActor = nullptr;
+		SetWatchingPlayer(false);
+	}
+	
+	OnPowerStateChanged(bActive);
 }

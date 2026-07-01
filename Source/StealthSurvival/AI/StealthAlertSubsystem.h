@@ -12,7 +12,6 @@ class UStealthAlertSubsystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-	
 	UPROPERTY(BlueprintAssignable, Category="Alert")
 	FOnAlertRaised OnAlertRaised;
 	

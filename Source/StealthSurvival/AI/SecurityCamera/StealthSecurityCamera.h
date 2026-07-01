@@ -21,6 +21,7 @@ public:
 	AStealthSecurityCamera();
 	
 	virtual void GetActorEyesViewPoint(FVector& OutLocation, FRotator& OutRotation) const override;
+	void SetCameraActive(bool bActive);
 	
 	UFUNCTION(BlueprintPure, Category = "Camera")
 	USceneComponent* GetCameraPivot() const {return CameraPivot;}
@@ -31,6 +32,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Camera")
 	FVector GetLastSeenLocation() const {return LastSeenLocation;}
 
+	UFUNCTION(BlueprintPure, Category = "Camera")
+	bool IsCameraActive() const {return bIsActive;}
+	
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -51,7 +55,7 @@ protected:
 	UStaticMeshComponent* HeadMesh;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta=(AllowPrivateAccess = "true"))
-	USpotLightComponent* DetectionCone;
+	TObjectPtr<UStaticMeshComponent> DetectionCone;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta=(AllowPrivateAccess = "true"))
 	UAIPerceptionComponent* PerceptionComponent;
@@ -79,7 +83,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Camera|Perception", meta=(ClampMin="0"))
 	float SightMaxAge = 3.f;
+	
+	UPROPERTY(BlueprintReadOnly, Category="Camera|State")
+	bool bIsActive = true;
 
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Vision")
+	FLinearColor UnawareColor = FLinearColor(0.1f, 1.f, 0.2f);
+	
+	UPROPERTY(EditDefaultsOnly, Category="Camera|Vision")
+	FLinearColor AlertedColor = FLinearColor(1.f, 0.1f, 0.1f);
 	UFUNCTION()
 	void OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+	
+	UFUNCTION(BlueprintImplementableEvent, Category="Camera")
+	void OnPowerStateChanged(bool bActive);
 };
