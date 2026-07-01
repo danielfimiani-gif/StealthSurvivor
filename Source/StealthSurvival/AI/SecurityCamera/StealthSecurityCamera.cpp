@@ -42,7 +42,6 @@ AStealthSecurityCamera::AStealthSecurityCamera()
 	SightConfig->LoseSightRadius = LoseSightRadius;
 	SightConfig->PeripheralVisionAngleDegrees = PeripheralVisionAngle;
 	SightConfig->SetMaxAge(SightMaxAge);
-	SightConfig->AutoSuccessRangeFromLastSeenLocation = 200.f;
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = true;

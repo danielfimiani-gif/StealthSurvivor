@@ -23,7 +23,6 @@ AStealthAIController::AStealthAIController(const FObjectInitializer& ObjectIniti
 	SightConfig->LoseSightRadius = 1800.f;
 	SightConfig->PeripheralVisionAngleDegrees = 60.f;
 	SightConfig->SetMaxAge(5.f);
-	SightConfig->AutoSuccessRangeFromLastSeenLocation  = 200.f;
 	SightConfig->DetectionByAffiliation.bDetectEnemies = true;
 	SightConfig->DetectionByAffiliation.bDetectNeutrals = true;
 	SightConfig->DetectionByAffiliation.bDetectFriendlies = false;
